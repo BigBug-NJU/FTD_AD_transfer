@@ -1,6 +1,5 @@
 '''
-Dataset for training
-Written by Whalechen
+Written by Jingjing Hu, shawkin@yeah.com
 '''
 
 import math
@@ -154,7 +153,7 @@ class DatasetFolder(VisionDataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return sample, target
+        return sample, path, target
 
     def __len__(self):
         return len(self.samples)
@@ -174,15 +173,18 @@ def drop_invalid_range(volume):
     
     return volume[min_z:max_z, min_h:max_h, min_w:max_w]
 
-
-def random_center_crop(input_D, input_H, input_W, data):
+def head_crop(data):
     from random import random
     """
     Random crop
     """
+    [depth, height, width] = data.shape
+    data1 = data[40:(depth-16),0:(height-8),:]
+    #print(data1.shape)
+    [d1, h1, w1] = data1.shape
     index = np.random.randint(0,8)
-    crop_data = np.zeros([input_D-8, input_H-8, input_W-8], dtype=np.float32)
-    crop_data[:, :, :] = data[index:(index+input_D-8), index:(index+input_H-8), index:(index+input_W-8)]
+    crop_data = np.zeros([d1-8, h1-8, w1], dtype=np.float32)
+    crop_data[:, :, :] = data1[index:(index+d1-8), index:(index+h1-8), :]
     return crop_data
 
 def itensity_normalize_one_volume(volume):
@@ -213,12 +215,12 @@ def resize_data(input_D, input_H, input_W, data):
     return data
 
 
-def crop_data(input_D, input_H, input_W, data):
+def crop_data(data):
     """
     Random crop with different methods:
     """ 
     # random center crop
-    data = random_center_crop(input_D, input_H, input_W, data)
+    data = head_crop(data)
     
     return data
 
@@ -239,7 +241,7 @@ def nii_loader(path, input_D, input_H, input_W):
     data3 = resize_data(input_D, input_H, input_W, data2)
 
     # crop data
-    data4 = crop_data(input_D, input_H, input_W, data3) 
+    data4 = crop_data(data3) 
 
     # normalization datas
     data5 = itensity_normalize_one_volume(data4)

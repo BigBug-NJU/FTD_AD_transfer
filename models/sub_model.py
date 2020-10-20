@@ -1,7 +1,30 @@
+'''
+Written by Jingjing Hu, shawkin@yeah.com
+'''
+
 import torch
 from torch import nn
 from models import resnet
+import os
 
+def generate_res50(opt):
+    model = resnet.resnet50(
+        sample_input_W=opt.input_W,
+        sample_input_H=opt.input_H,
+        sample_input_D=opt.input_D,
+        shortcut_type=opt.resnet_shortcut,
+        no_cuda=opt.no_cuda,
+        num_seg_classes=opt.n_seg_classes)
+        
+    # Here the size of each output sample is set to 2.
+    # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
+    model.conv_seg = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
+    model.fc = nn.Linear(2048, opt.num_classes)
+    if not opt.no_cuda:
+        os.environ["CUDA_VISIBLE_DEVICES"]=str(opt.gpu_id[0])
+        model = model.cuda()
+        model = nn.DataParallel(model, device_ids=None)
+    return model
 
 def generate_model(opt):
     assert opt.model in [
@@ -68,17 +91,25 @@ def generate_model(opt):
                 no_cuda=opt.no_cuda,
                 num_seg_classes=opt.n_seg_classes)
 
-    # Here the size of each output sample is set to 2.
-    # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
     model.conv_seg = nn.AdaptiveAvgPool3d(output_size=(1, 1, 1))
-    model.fc = nn.Linear(2048, 2)
+    model.fc = nn.Linear(2048, opt.num_classes)
     return h2d_model(model, opt)
 
 def h2d_model(model, opt):
     if not opt.no_cuda:
         if len(opt.gpu_id) > 1:
+            import os
+            gpu_ids = ""
+            for gpu_id in opt.gpu_id:
+                gpu_ids += str(gpu_id)
+                gpu_ids += ","
+            gpu_ids = gpu_ids[0:-1]
+            os.environ["CUDA_VISIBLE_DEVICES"]=gpu_ids
+
+            opt.gpu_id = range(len(opt.gpu_id))
             model = model.cuda() 
             model = nn.DataParallel(model, device_ids=opt.gpu_id)
+            #model = nn.DataParallel(model, device_ids=opt.gpu_id).cuda()
             net_dict = model.state_dict() 
         else:
             import os
@@ -94,7 +125,10 @@ def h2d_model(model, opt):
         print ('loading pretrained model {}'.format(opt.pretrain_path))
         pretrain = torch.load(opt.pretrain_path)
         pretrain_dict = {k: v for k, v in pretrain['state_dict'].items() if k in net_dict.keys()}
-         
+        # rm fc because num of class is different
+        pretrain_dict.pop('module.fc.weight')
+        pretrain_dict.pop('module.fc.bias')
+        #
         net_dict.update(pretrain_dict)
         model.load_state_dict(net_dict)
 

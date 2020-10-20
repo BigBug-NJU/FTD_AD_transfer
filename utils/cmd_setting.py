@@ -1,6 +1,5 @@
 '''
-Configs for training & testing
-Written by Whalechen
+Written by Jingjing Hu, shawkin@yeah.com
 '''
 
 import argparse
@@ -22,6 +21,12 @@ def parse_opts():
         default=2,
         type=int,
         help="Number of segmentation classes"
+    )
+    parser.add_argument(
+        '--num_classes',
+        default=2,
+        type=int,
+        help="Number of classification classes"
     )
     parser.add_argument(
         '--learning_rate',  # set to 0.001 when finetune

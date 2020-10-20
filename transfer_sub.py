@@ -1,15 +1,10 @@
 '''
-Training code for MRBrainS18 datasets segmentation
-Written by Whalechen
+Written by Jingjing Hu, shawkin@yeah.com
 '''
 
-#from setting import parse_opts 
-from mw_setting import parse_opts
-from datasets.nifd import NiiFolder
-#from datasets.brains18 import BrainS18Dataset 
-#from model import generate_model
-#from trans_model import generate_model
-from mw_model import generate_model
+from utils.cmd_setting import parse_opts
+from datasets.paper_nifd import NiiFolder
+from models.sub_model import generate_model
 import torch
 import numpy as np
 from torch import nn
@@ -62,9 +57,20 @@ class ProgressMeter(object):
         fmt = '{:' + str(num_digits) + 'd}'
         return '[' + fmt + '/' + fmt.format(num_batches) + ']'
 
-def accuracy(output, target, topk=(1,)):
+def accuracy(fo, fname, output, target, topk=(1,)):
     """Computes the accuracy over the k top predictions for the specified values of k"""
     with torch.no_grad():
+        for i in range(len(fname)):
+            tmp = output[i].cpu()
+            tmp1 = target[i].cpu()
+            context = fname[i]
+            for j in range(len(tmp)):
+                context = context + ", " + str(tmp[j].numpy())
+            context = context + ", " + str(tmp.argmax().numpy()) + ", " + str(tmp1.numpy())
+            #print(context)
+            context = context + "\n"
+            fo.write(context)
+
         maxk = max(topk)
         batch_size = target.size(0)
 
@@ -78,7 +84,7 @@ def accuracy(output, target, topk=(1,)):
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 
-def train_one_epoch(data_loader, model, criterion, optimizer, total_epochs, save_interval, save_folder, sets, epoch):
+def train_one_epoch(fo, data_loader, model, criterion, optimizer, total_epochs, save_interval, save_folder, sets, epoch):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
@@ -91,8 +97,8 @@ def train_one_epoch(data_loader, model, criterion, optimizer, total_epochs, save
 
     end = time.time()
     model.train()
-
-    for batch_id, (volumes, target) in enumerate(data_loader):
+    fo.write("train [" + str(epoch) + "]:\n")
+    for batch_id, (volumes, fpath, target) in enumerate(data_loader):
         if volumes.ndim != 5 or target.ndim != 1:
             print("train volume:", volumes.shape, "-->", target.shape)
             continue
@@ -111,7 +117,7 @@ def train_one_epoch(data_loader, model, criterion, optimizer, total_epochs, save
         loss = criterion(output, target)
 
         # measure accuracy and record loss
-        acc1, acc2 = accuracy(output, target, topk=(1, 2))
+        acc1, acc2 = accuracy(fo, fpath, output, target, topk=(1, 2))
         losses.update(loss.item(), volumes.size(0))
         top1.update(acc1[0], volumes.size(0))
         top5.update(acc2[0], volumes.size(0))
@@ -128,7 +134,7 @@ def train_one_epoch(data_loader, model, criterion, optimizer, total_epochs, save
         if batch_id % sets.print_freq == 0:
             progress.display(batch_id)
 
-def validate(val_loader, model, criterion, sets):
+def validate(fo, val_loader, model, criterion, sets):
     batch_time = AverageMeter('Time', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     top1 = AverageMeter('Acc@1', ':6.2f')
@@ -140,10 +146,10 @@ def validate(val_loader, model, criterion, sets):
 
     # switch to evaluate mode
     model.eval()
-
+    fo.write("test :\n")
     with torch.no_grad():
         end = time.time()
-        for batch_id, (volumes, target) in enumerate(val_loader):
+        for batch_id, (volumes, fpath, target) in enumerate(val_loader):
             if volumes.ndim != 5 or target.ndim != 1:
                 print("varfy volume:", volumes.shape, "-->", target.shape)
                 continue
@@ -161,7 +167,7 @@ def validate(val_loader, model, criterion, sets):
             loss = criterion(output, target)
 
             # measure accuracy and record loss
-            acc1, acc2 = accuracy(output, target, topk=(1, 2))
+            acc1, acc2 = accuracy(fo, fpath, output, target, topk=(1, 2))
             losses.update(loss.item(), volumes.size(0))
             top1.update(acc1[0], volumes.size(0))
             top5.update(acc2[0], volumes.size(0))
@@ -180,7 +186,7 @@ def validate(val_loader, model, criterion, sets):
     return top1.avg
 
 best_acc1 = 0
-def train(data_loader, val_loader, model, optimizer, scheduler, total_epochs, save_interval, save_folder, sets):
+def train(fo, data_loader, val_loader, model, optimizer, scheduler, total_epochs, save_interval, save_folder, sets):
     # settings
     global best_acc1
     batches_per_epoch = len(data_loader)
@@ -198,9 +204,9 @@ def train(data_loader, val_loader, model, optimizer, scheduler, total_epochs, sa
         
         #scheduler.step()
         log.info('lr = {}'.format(scheduler.get_lr()))
-        train_one_epoch(data_loader, model, criterion, optimizer, total_epochs, save_interval, save_folder, sets, epoch)
+        train_one_epoch(fo, data_loader, model, criterion, optimizer, total_epochs, save_interval, save_folder, sets, epoch)
         # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, sets)
+        acc1 = validate(fo, val_loader, model, criterion, sets)
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
@@ -218,10 +224,10 @@ def train(data_loader, val_loader, model, optimizer, scheduler, total_epochs, sa
     if sets.ci_test:
         exit()
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, filename='roc_checkpoint.pth.tar'):
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(filename, 'roc_model_best.pth.tar')
 
 if __name__ == '__main__':
     # settting
@@ -254,7 +260,8 @@ if __name__ == '__main__':
                 { 'params': parameters['new_parameters'], 'lr': sets.learning_rate*100 }
                 ]
     optimizer = torch.optim.SGD(params, momentum=0.9, weight_decay=1e-3)   
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
+    #scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=0)
 
     # train from resume
     if sets.resume_path:
@@ -280,7 +287,11 @@ if __name__ == '__main__':
     data_loader = DataLoader(training_dataset, batch_size=sets.batch_size, shuffle=True, num_workers=sets.num_workers, pin_memory=sets.pin_memory)
     val_loader = DataLoader(val_dataset, batch_size=sets.batch_size, shuffle=True, num_workers=sets.num_workers, pin_memory=sets.pin_memory)
     # training
-    train(data_loader, val_loader, model, optimizer, scheduler, total_epochs=sets.n_epochs, save_interval=sets.save_intervals, save_folder=sets.save_folder, sets=sets) 
+    import time
+    cur = time.strftime('%Y-%m-%d_%H-%M-%S',time.localtime(time.time()))
+    fsave = "roc_record_" + cur + ".txt"
+    fo = open(fsave, "w")
+    train(fo, data_loader, val_loader, model, optimizer, scheduler, total_epochs=sets.n_epochs, save_interval=sets.save_intervals, save_folder=sets.save_folder, sets=sets) 
+    fo.close()
 
-# e3d
-# python transfer.py --gpu_id 0 1 --data_root=../../data/resNIFD/ --pretrain_path=./pretrain/resnet_50_23dataset.pth --batch_size=4 --n_epochs=200 > hjj_3.log 
+# python transfer_sub.py --gpu_id 4 5 6 7 --data_root=/data/ROC/PartMprageTrain --pretrain_path=./save_e6/checkpoint.pth.tar --batch_size=12 --n_epochs=1000 --num_classes=2 --num_workers=1 --input_D=256 --input_H=240 --input_W=160 > hjj_paper_e6_2_192224160_0.001.log
