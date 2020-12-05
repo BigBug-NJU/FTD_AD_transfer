@@ -1,8 +1,10 @@
 
 # Idea, code and pretrained model
-This repository contains a Pytorch implementation of [Deep learning based classification and voxel-based visualization of frontotemporal dementia and Alzheimer’s disease]. 
-Deep learning (DL) network with raw 3D MRI volumes provided an automatic way without any hypothesis-based preprocessing. However its performance and interpretability is still unclear.
-To the best of our knowledge, this is the first successful trial for the diagnosis of FTD with end-to-end deep learning technology. The proposed approach achieved promising performance without any human intervention. The pattern knowledge learned is generalized, and could be transferred to other datasets and tasks. That is, DL will free researchers from endless problems. Furthermore, we applied gradient visualization algorithm based on guided backpropagation to calculate the contribution graph. It told us intuitively that the proposed network mined the potential patterns which may be different from human clinicians, which may provide new insight on the understanding of FTD and AD.
+This repository contains a Pytorch implementation of [Deep learning-based classification and voxel-based visualization of frontotemporal dementia and Alzheimer’s disease]. 
+
+Precise identification of frontotemporal dementia (FTD) and Alzheimer's disease (AD), which are the two most common types of dementia in the younger-elderly population, is advantageous for targeted treatment and patient care. The atrophy of specific brain regions shown by structural magnetic resonance imaging (MRI) is an important part of the diagnostic criteria for FTD and AD. However, MRI-based diagnosis mainly relies on the professional knowledge and clinical experience of doctors.
+
+We investigated the diagnostic value of deep learning (DL)-based networks in differentiating between patients with FTD, patients with AD and normal control (NC), on an individual patient basis. To the best of our knowledge, this is the first successful trial of the diagnosis of FTD with an end-to-end DL technology. The proposed approach achieved promising performance without any professional intervention. The pattern knowledge learned is generalizable, and can be transferred to other datasets and tasks. That is, DL will free researchers from endless problems. Furthermore, we applied a gradient visualization algorithm based on guided backpropagation to calculate the contribution graph. It told us intuitively that the proposed network mined the potential patterns that may be different from human clinicians, which may provide new insight into the understanding of FTD and AD.
 
 ### Contents
 1. [Requirements](#Requirements)
@@ -44,7 +46,7 @@ python transfer_paper.py --gpu_id 0 1 2 3 4 5 6 7 --data_root=/data/ResHjjTrain/
 
 ### Code
 ```
-git clone https://github.com/BigBug1992/AD_NIFD_Med3D_transfer.git
+git clone https://github.com/BigBug1992/AD_NIFD_transfer.git
 cd AD_NIFD_Med3D_transfer
 ```
 
