@@ -124,6 +124,8 @@ python transfer_sub.py --gpu_id 0 1 2 3 4 5 6 7 --data_root=/data/ROC/ResHjjTrai
 
 Med3D pre-trained models can be found at ([Google Drive](https://drive.google.com/file/d/13tnSvXY7oDIEloNFiGTsjUIYfS3g3BfG/view?usp=sharing) or [Tencent Weiyun](https://share.weiyun.com/55sZyIx))
 
+Pre-trained models and logs for 9 scenarios in paper [Deep learning-based classification and voxel-based visualization of frontotemporal dementia and Alzheimer’s disease] can be found at ([BaiduNetdisk](https://pan.baidu.com/s/1ro-3jFbxUKHYhK5jp4uFaQ), passcode is "fc0q").
+
 ### Visualize
 cd visualize
 
