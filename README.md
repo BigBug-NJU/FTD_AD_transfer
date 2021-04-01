@@ -1,6 +1,6 @@
 
 # Idea, code and pretrained model
-This repository contains a Pytorch implementation of [Deep learning-based classification and voxel-based visualization of frontotemporal dementia and Alzheimer’s disease]. 
+This repository contains a Pytorch implementation of [https://doi.org/10.3389/fnins.2020.626154]. 
 
 Precise identification of frontotemporal dementia (FTD) and Alzheimer's disease (AD), which are the two most common types of dementia in the younger-elderly population, is advantageous for targeted treatment and patient care. The atrophy of specific brain regions shown by structural magnetic resonance imaging (MRI) is an important part of the diagnostic criteria for FTD and AD. However, MRI-based diagnosis mainly relies on the professional knowledge and clinical experience of doctors.
 
